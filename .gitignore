@@ -1,0 +1,11 @@
+# DMS plugin backup files
+*.bak
+*.full
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

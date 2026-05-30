@@ -1,0 +1,12 @@
+{
+  "id": "dmsPet",
+  "name": "Claude Pet",
+  "description": "A cute animated blob pet that reflects Claude Code state",
+  "version": "1.0.0",
+  "author": "db",
+  "icon": "pets",
+  "capabilities": ["dankbar-widget"],
+  "component": "./DmsPet.qml",
+  "settings": "./PetSettings.qml",
+  "permissions": ["settings_read", "settings_write", "process"]
+}
