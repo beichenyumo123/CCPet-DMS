@@ -148,6 +148,7 @@ dms restart
 | Use Theme Color | Toggle | On | Follow Material You theme color |
 | Custom Pet Color | Color | `#7C9CBF` | Color when theme is disabled |
 | Show State Emoji | Toggle | Off | Display emoji label above pet |
+| Show Pet Name | Toggle | Off | Display the pet's name next to it in the bar |
 
 ## 🔧 Technical Details
 

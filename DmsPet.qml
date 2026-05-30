@@ -15,6 +15,7 @@ PluginComponent {
     property bool useThemeColor: pluginData.useThemeColor ?? true
     property color petColor: pluginData.petColor ?? Theme.primary
     property bool showStateLabel: pluginData.showStateIndicator ?? false
+    property bool showNameLabel: pluginData.showPetName ?? false
 
     readonly property real maxPetSize: Math.min(Math.max(widgetThickness * 0.78, 18), 44)
     readonly property real speedMult: animSpeed / 100.0
@@ -140,6 +141,26 @@ PluginComponent {
                 color: Qt.rgba(1, 1, 1, 0.22)
                 antialiasing: true
             }
+
+            // 状态 Emoji 气泡标签（跟随 body transform 移动）
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: -height * 0.7
+                text: {
+                    switch (blob.state) {
+                        case "working": return "⚡";
+                        case "waking": return "☀️";
+                        case "sleeping": return ""; // 睡觉状态已替换为浮动 💤 粒子
+                        case "error": return "❌";
+                        case "alert": return "🚨";
+                        default: return "";
+                    }
+                }
+                font.pixelSize: Math.max(12, blob.height * 0.26)
+                visible: blob.showLabel && blob.state !== "idle"
+                opacity: visible ? 1.0 : 0.0
+                Behavior on opacity { NumberAnimation { duration: 200 / blob.speedMul; easing.type: Easing.InOutQuad } }
+            }
         }
 
         // 眼睛组件
@@ -213,23 +234,6 @@ PluginComponent {
             Behavior on color { ColorAnimation { duration: 150 } }
         }
 
-        // 状态 Emoji 气泡标签
-        Text {
-            anchors.horizontalCenter: body.horizontalCenter
-            y: -blob.height * 0.08
-            text: {
-                switch (blob.state) { 
-                    case "working": return "⚡"; 
-                    case "waking": return "☀️";
-                    case "sleeping": return ""; // 睡觉状态已替换为浮动 💤 粒子
-                    case "error": return "❌"; 
-                    case "alert": return "🚨";
-                    default: return ""; 
-                }
-            }
-            font.pixelSize: blob.height * 0.26
-            visible: blob.showLabel && blob.state !== "idle"
-        }
 
         // ═══════════════════════════════════════════
         // 精致的粒子互动特效
@@ -494,11 +498,11 @@ PluginComponent {
             }
 
             StyledText {
-                text: root.showStateLabel ? root.petName : ""
+                text: root.showNameLabel ? root.petName : ""
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.surfaceVariantText
                 anchors.verticalCenter: parent.verticalCenter
-                visible: root.showStateLabel && text !== ""
+                visible: root.showNameLabel && text !== ""
             }
         }
     }
@@ -556,7 +560,7 @@ PluginComponent {
                         PetBlob {
                             anchors.centerIn: parent; height: 96
                             state: root.claudeState; pColor: root.activeColor
-                            speedMul: root.speedMult; showLabel: true
+                            speedMul: root.speedMult; showLabel: true  // popout 是详情视图，始终显示 emoji
                         }
                     }
 

@@ -53,6 +53,13 @@ PluginSettings {
         settingKey: "showStateIndicator"
         label: "Show State Emoji"
         description: "Display emoji above pet showing current state"
+        defaultValue: true
+    }
+
+    ToggleSetting {
+        settingKey: "showPetName"
+        label: "Show Pet Name"
+        description: "Display the pet's name next to it in the bar"
         defaultValue: false
     }
 }
