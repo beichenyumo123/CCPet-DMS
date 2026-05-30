@@ -1,84 +1,123 @@
-# DMS Claude Pet
+# 🐾 DMS Claude Pet
 
-一个用于 [Dank Material Shell](https://github.com/AvengeMedia/DankMaterialShell) 的 **状态感知桌面宠物插件**，栖息在 DankBar 中，通过动画实时反映 [Claude Code](https://claude.com/code) 的工作状态。
+<p align="center">
+  <img src="https://img.shields.io/badge/platform-DMS%20≥%201.4.0-blue?style=flat-square" alt="DMS">
+  <img src="https://img.shields.io/badge/runtime-Quickshell%20≥%200.3.0-green?style=flat-square" alt="Quickshell">
+  <img src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square" alt="License">
+</p>
 
-## 预览
+A **state-aware desktop pet plugin** for [Dank Material Shell](https://github.com/AvengeMedia/DankMaterialShell) that lives in your DankBar, reacting in real-time to [Claude Code](https://code.claude.com) activity through expressive animations and particle effects.
 
-| 状态 | 效果 | 触发条件 |
-|------|------|---------|
-| 😌 idle | 呼吸起伏 + 眨眼 + 偶尔小跳 | Claude 等待输入 |
-| ⚡ working | 15° 左右摆动 | Claude 调用工具、执行代码 |
-| ☀️ waking | 伸懒腰弹跳 | 新会话开始 |
-| 💤 sleeping | 闭眼 + 变暗 + 慢呼吸 | 会话结束 |
-| 😵 error | 变红 + 摇头 + 红色瞳孔 | 工具执行失败 |
-| 🚨 alert | 跳跃 + 红色大嘴 | 需要用户授权 |
+---
 
-## 架构
+## ✨ Features
+
+- **6 animated states** — idle, working, waking, sleeping, error, and alert — each with unique physics-driven animations
+- **Eye tracking** — pupils follow your mouse cursor for a lifelike gaze effect
+- **Click interaction** — squish the pet with a bouncy jelly deformation, complete with floating ❤️ particles
+- **Popout panel** — click to open a detail view showing Claude's current state, event, and tool
+- **Physics engine** — squash & stretch, elastic bounce, inertia — the pet feels alive
+- **Material You theming** — auto-adapts to your DMS theme colors
+- **Particle effects** — floating 💤 Zzz bubbles when sleeping
+- **Zero external assets** — entirely vector-drawn in QML (no PNGs, no SVGs)
+
+## 🎬 States
+
+| State | Emoji | Animation | Trigger |
+|-------|-------|-----------|---------|
+| `idle` | 😌 | Breathing + blinking + occasional hops | Claude waiting for input |
+| `working` | ⚡ | 15° side-to-side wobble | Tool use, code execution, prompt submission |
+| `waking` | ☀️ | Stretch & bounce entrance | New Claude session started |
+| `sleeping` | 💤 | Closed eyes + dimmed + slow breathing + floating Zzz | Session ended |
+| `error` | 😵 | Red flash + head shake + red pupils | Tool execution failure |
+| `alert` | 🚨 | Bouncing alert jump + large red mouth | User authorization required |
+
+## 🏗 Architecture
 
 ```
 Claude Code (CLI / VSCode)
-  │  Hook 事件: SessionStart, PreToolUse, PostToolUse, Stop...
+  │  Hook events: SessionStart, PreToolUse, PostToolUse,
+  │               UserPromptSubmit, PostToolUseFailure,
+  │               Stop, StopFailure, Notification, SessionEnd
   ▼
 update-claude-state.sh  ──→  ~/.cache/dms-pet/claude-state.json
                                     │
-                              QML Timer 轮询 (800ms)
+                              QML Timer polling (800ms)
                                     │
-                             PetBlob 切换动画
+                             PetBlob animation engine
 ```
 
-无论从终端 (`claude`) 还是 VSCode 扩展调用 Claude Code，hooks 都会触发。Claude Code hooks 是引擎层功能，与 UI 无关。
+Hooks fire regardless of how you invoke Claude Code — CLI, VSCode extension, or any other UI. Claude Code hooks are engine-level, not UI-dependent.
 
-## 文件结构
+## 📁 Project Structure
 
 ```
 dmsPet/
-├── plugin.json                    # DMS 插件清单
-├── DmsPet.qml                     # 主组件：PluginComponent + PetBlob + 状态轮询
-├── PetSettings.qml                # 设置面板
-└── scripts/
-    └── update-claude-state.sh     # Claude Code hook 桥接脚本
+├── plugin.json                    # DMS plugin manifest
+├── DmsPet.qml                     # Main component: PluginComponent + PetBlob + state polling
+├── PetSettings.qml                # Settings panel (name, size, speed, color, emoji)
+├── scripts/
+│   └── update-claude-state.sh     # Claude Code hook bridge script
+└── README.md
 ```
 
-## 安装
+## 🚀 Installation
 
-### 1. 部署插件
+### 1. Clone the plugin
+
+```bash
+git clone https://github.com/YOUR_USERNAME/dmsPet.git ~/.config/DankMaterialShell/plugins/dmsPet
+```
+
+Or manually:
 
 ```bash
 cp -r dmsPet ~/.config/DankMaterialShell/plugins/
 ```
 
-### 2. 启用插件
+### 2. Enable the plugin
+
+In DMS settings: **Settings → Plugins → Claude Pet → Enable**
+
+Or via CLI:
 
 ```bash
-# 在 DMS 设置中：
-# Settings → Plugins → 找到 "Claude Pet" → 启用
-
-# 或通过 CLI：
 cat ~/.config/DankMaterialShell/plugin_settings.json | \
   jq '.dmsPet = {"enabled": true}' > /tmp/ps.json && \
   mv /tmp/ps.json ~/.config/DankMaterialShell/plugin_settings.json
 ```
 
-### 3. 添加到 DankBar
+### 3. Add to DankBar
 
-在 DMS 设置中将 `dmsPet` 添加到 Bar 的 widget 列表中。
-
-或者编辑 `~/.config/DankMaterialShell/settings.json`，在 `barConfigs[0].centerWidgets` 中添加：
+In DMS settings, add `dmsPet` to your bar widget list. Or edit `~/.config/DankMaterialShell/settings.json`:
 
 ```json
-{ "id": "dmsPet", "enabled": true }
+{
+  "barConfigs": [{
+    "centerWidgets": [
+      { "id": "dmsPet", "enabled": true }
+    ]
+  }]
+}
 ```
 
-### 4. 配置 Claude Code Hooks
+### 4. Configure Claude Code hooks
 
-在 `~/.claude/settings.json` 中为以下事件添加 hook：
+Add the hook script to `~/.claude/settings.json` for these events:
 
-```
-SessionStart, PreToolUse, PostToolUse, PostToolUseFailure,
-Stop, StopFailure, Notification, SessionEnd
-```
+| Hook Event | Purpose |
+|------------|---------|
+| `SessionStart` | Pet wakes up |
+| `PreToolUse` | Pet starts working |
+| `PostToolUse` | Pet continues working |
+| `UserPromptSubmit` | Instant activation on input |
+| `PostToolUseFailure` | Pet shows error |
+| `Stop` | Pet returns to idle |
+| `StopFailure` | Pet shows error |
+| `Notification` | Pet alerts for user attention |
+| `SessionEnd` | Pet goes to sleep |
 
-每个事件添加：
+Example hook entry:
 
 ```json
 {
@@ -91,44 +130,69 @@ Stop, StopFailure, Notification, SessionEnd
 }
 ```
 
-### 5. 重启 DMS
+> **Tip:** Use a partial matcher like `""` to trigger on all events, or configure per-event for fine-grained control.
+
+### 5. Restart DMS
 
 ```bash
 dms restart
 ```
 
-## 设置
+## ⚙️ Settings
 
-| 设置 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| Pet Name | 字符串 | "Clawdy" | 宠物名字 |
-| Pet Size | 滑块 (50%-150%) | 100% | 在 DankBar 中的大小 |
-| Animation Speed | 滑块 (50%-200%) | 100% | 动画播放速度 |
-| Use Theme Color | 开关 | on | 使用 Material You 主题色 |
-| Custom Pet Color | 颜色 | #7C9CBF | 自定义颜色（关闭主题色时生效） |
-| Show State Emoji | 开关 | off | 头顶显示状态 emoji |
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| Pet Name | String | `Clawdy` | Your pet's name (shown in popout) |
+| Pet Size | Slider (50–150%) | `100%` | Size in the DankBar |
+| Animation Speed | Slider (50–200%) | `100%` | Animation playback speed |
+| Use Theme Color | Toggle | On | Follow Material You theme color |
+| Custom Pet Color | Color | `#7C9CBF` | Color when theme is disabled |
+| Show State Emoji | Toggle | Off | Display emoji label above pet |
 
-## 技术细节
+## 🔧 Technical Details
 
-- **纯 QML 矢量绘制** — 无需外部图片资源，用 Rectangle + radius 绘制 blob
-- **Transform 动画** — 使用 `Translate` + `Rotation` transform 而非直接 x/y/rotation，避免与 anchors 布局冲突
-- **状态轮询** — `Quickshell.Io.Process` 每 800ms 读取状态文件
-- **失效保护** — 状态文件超过 30s 未更新自动回退到 idle
-- **单文件内联组件** — 使用 QML `component` 关键字将 PetBlob 内联在 DmsPet.qml 中，避免跨文件加载问题
+- **Pure QML vector graphics** — body, eyes, pupils, blush, and mouth are all `Rectangle` + `radius` shapes. No image assets needed.
+- **Transform-based animations** — uses `Translate`, `Rotation`, and `Scale` transforms rather than direct `x`/`y`/`rotation` properties, avoiding conflicts with anchor layouts.
+- **Squash & stretch** — scale origin is set to the bottom of the body (`origin.y: body.height`), so the pet appears grounded like a physical object.
+- **Volume preservation** — breathing animation stretches on one axis while compressing on the other.
+- **State polling** — `Quickshell.Io.Process` reads the state file every 800ms.
+- **Stale detection** — state file older than 30 seconds auto-reverts to `idle`.
+- **XDG compliant** — respects `$XDG_CACHE_HOME`, falls back to `~/.cache`.
+- **Inline components** — `PetBlob` is defined with QML's `component` keyword inside `DmsPet.qml`, avoiding cross-file loading issues.
 
-## 依赖
+## 🧩 PetBlob Anatomy
 
-- DMS ≥ 1.4.0
-- Quickshell ≥ 0.3.0
-- jq（hook 脚本需要）
-- Claude Code（任意调用方式：CLI / VSCode 扩展）
+The pet is composed entirely of layered QML primitives:
 
-## 相关资源
+```
+         💤 (Zzz particle, sleeping only)
+    ⚡ (state emoji, when enabled)
+        ┌──────────┐
+   ┌────│ Highlight │────┐
+   │    └──────────┘    │
+   │  ┌──┐        ┌──┐  │  ← Eyes (squint when sleeping)
+   │  │◉││  Body  │◉││  │  ← Pupils (track mouse position)
+   │  └──┘  ┌──┐  └──┘  │
+   │   (◡)  │口│  (◡)   │  ← Blush + Mouth (color/scale by state)
+   │        └──┘         │
+   └─────────────────────┘
+        ░░░ shadow ░░░       ← Dynamic shadow (scales with bounce height)
+```
 
-- [DMS 插件开发文档](https://danklinux.com/docs/dankmaterialshell/plugin-development)
-- [Claude Code Hooks 文档](https://code.claude.com/docs/en/hooks)
-- [DMS 源码](https://github.com/AvengeMedia/DankMaterialShell)
+## 📦 Dependencies
 
-## License
+- [Dank Material Shell](https://github.com/AvengeMedia/DankMaterialShell) ≥ 1.4.0
+- [Quickshell](https://quickshell.org) ≥ 0.3.0
+- `jq` — required by the hook bridge script
+- [Claude Code](https://code.claude.com) — any invocation method (CLI, VSCode, etc.)
+
+## 🔗 Related Resources
+
+- [DMS Plugin Development Docs](https://danklinux.com/docs/dankmaterialshell/plugin-development)
+- [Claude Code Hooks Documentation](https://code.claude.com/docs/en/hooks)
+- [DMS Source Code](https://github.com/AvengeMedia/DankMaterialShell)
+- [Quickshell Documentation](https://quickshell.org)
+
+## 📄 License
 
 MIT
