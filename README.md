@@ -10,6 +10,9 @@ A **state-aware desktop pet plugin** for [Dank Material Shell](https://github.co
 
 ---
 
+![alt text](image.png)
+![alt text](image-1.png)
+
 ## ✨ Features
 
 - **6 animated states** — idle, working, waking, sleeping, error, and alert — each with unique physics-driven animations
@@ -18,19 +21,23 @@ A **state-aware desktop pet plugin** for [Dank Material Shell](https://github.co
 - **Popout panel** — click to open a detail view showing Claude's current state, event, and tool
 - **Physics engine** — squash & stretch, elastic bounce, inertia — the pet feels alive
 - **Material You theming** — auto-adapts to your DMS theme colors
-- **Particle effects** — floating 💤 Zzz bubbles when sleeping
-- **Zero external assets** — entirely vector-drawn in QML (no PNGs, no SVGs)
+- **Particle effects** — floating 💤 Zzz when sleeping, floating code symbols (⚡📝🔧) when working
+- **Cat ear accessories** — triangle Shape ears with pink inner ear, toggleable in settings
+- **Working headphones** — headband + accent-colored ear cups appear during working state
+- **Unicode kaomoji mouth** — per-state text symbols (◡ ▰ ⌓ ⁔ ロ) with elastic animation
+- **Fully integrated facial rig** — eyes, blush, and mouth live inside the body, inheriting squash & stretch
+- **Zero external assets** — entirely vector-drawn in QML via Rectangle, Shape, and Text (no PNGs, no SVGs)
 
 ## 🎬 States
 
-| State | Emoji | Animation | Trigger |
-|-------|-------|-----------|---------|
-| `idle` | 😌 | Breathing + blinking + occasional hops | Claude waiting for input |
-| `working` | ⚡ | 15° side-to-side wobble | Tool use, code execution, prompt submission |
-| `waking` | ☀️ | Stretch & bounce entrance | New Claude session started |
-| `sleeping` | 💤 | Closed eyes + dimmed + slow breathing + floating Zzz | Session ended |
-| `error` | 😵 | Red flash + head shake + red pupils | Tool execution failure |
-| `alert` | 🚨 | Bouncing alert jump + large red mouth | User authorization required |
+| State      | Bubble | Mouth | Animation                                         | Trigger                                     |
+| ---------- | ------ | ----- | ------------------------------------------------- | ------------------------------------------- |
+| `idle`     | —      | ◡     | Breathing + blinking + occasional hops            | Claude waiting for input                    |
+| `working`  | ⚡     | ▰     | 12° side-to-side wobble + floating code particles | Tool use, code execution, prompt submission |
+| `waking`   | ☀️     | ⌓     | Stretch & bounce entrance                         | New Claude session started                  |
+| `sleeping` | —      | —     | Closed eyes + slow breathing + floating Zzz       | Session ended                               |
+| `error`    | ❌     | ⁔     | Red flash + rapid shake + red pupils              | Tool execution failure                      |
+| `alert`    | 🚨     | ロ    | Bouncing alert jump + large red mouth             | User authorization required                 |
 
 ## 🏗 Architecture
 
@@ -93,11 +100,11 @@ In DMS settings, add `dmsPet` to your bar widget list. Or edit `~/.config/DankMa
 
 ```json
 {
-  "barConfigs": [{
-    "centerWidgets": [
-      { "id": "dmsPet", "enabled": true }
-    ]
-  }]
+	"barConfigs": [
+		{
+			"centerWidgets": [{ "id": "dmsPet", "enabled": true }]
+		}
+	]
 }
 ```
 
@@ -105,28 +112,30 @@ In DMS settings, add `dmsPet` to your bar widget list. Or edit `~/.config/DankMa
 
 Add the hook script to `~/.claude/settings.json` for these events:
 
-| Hook Event | Purpose |
-|------------|---------|
-| `SessionStart` | Pet wakes up |
-| `PreToolUse` | Pet starts working |
-| `PostToolUse` | Pet continues working |
-| `UserPromptSubmit` | Instant activation on input |
-| `PostToolUseFailure` | Pet shows error |
-| `Stop` | Pet returns to idle |
-| `StopFailure` | Pet shows error |
-| `Notification` | Pet alerts for user attention |
-| `SessionEnd` | Pet goes to sleep |
+| Hook Event           | Purpose                       |
+| -------------------- | ----------------------------- |
+| `SessionStart`       | Pet wakes up                  |
+| `PreToolUse`         | Pet starts working            |
+| `PostToolUse`        | Pet continues working         |
+| `UserPromptSubmit`   | Instant activation on input   |
+| `PostToolUseFailure` | Pet shows error               |
+| `Stop`               | Pet returns to idle           |
+| `StopFailure`        | Pet shows error               |
+| `Notification`       | Pet alerts for user attention |
+| `SessionEnd`         | Pet goes to sleep             |
 
 Example hook entry:
 
 ```json
 {
-  "matcher": "",
-  "hooks": [{
-    "type": "command",
-    "command": "~/.config/DankMaterialShell/plugins/dmsPet/scripts/update-claude-state.sh",
-    "timeout": 5
-  }]
+	"matcher": "",
+	"hooks": [
+		{
+			"type": "command",
+			"command": "~/.config/DankMaterialShell/plugins/dmsPet/scripts/update-claude-state.sh",
+			"timeout": 5
+		}
+	]
 }
 ```
 
@@ -140,19 +149,21 @@ dms restart
 
 ## ⚙️ Settings
 
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| Pet Name | String | `Clawdy` | Your pet's name (shown in popout) |
-| Pet Size | Slider (50–150%) | `100%` | Size in the DankBar |
-| Animation Speed | Slider (50–200%) | `100%` | Animation playback speed |
-| Use Theme Color | Toggle | On | Follow Material You theme color |
-| Custom Pet Color | Color | `#7C9CBF` | Color when theme is disabled |
-| Show State Emoji | Toggle | Off | Display emoji label above pet |
-| Show Pet Name | Toggle | Off | Display the pet's name next to it in the bar |
+| Setting            | Type             | Default   | Description                                  |
+| ------------------ | ---------------- | --------- | -------------------------------------------- |
+| Pet Name           | String           | `Clawdy`  | Your pet's name (shown in popout)            |
+| Pet Size           | Slider (50–150%) | `100%`    | Size in the DankBar                          |
+| Animation Speed    | Slider (50–200%) | `100%`    | Animation playback speed                     |
+| Use Theme Color    | Toggle           | On        | Follow Material You theme color              |
+| Custom Pet Color   | Color            | `#7C9CBF` | Color when theme is disabled                 |
+| Show State Emoji   | Toggle           | Off       | Display emoji label above pet                |
+| Show Pet Name      | Toggle           | Off       | Display the pet's name next to it in the bar |
+| Enable Accessories | Toggle           | On        | Show cat ears and working headphones         |
 
 ## 🔧 Technical Details
 
-- **Pure QML vector graphics** — body, eyes, pupils, blush, and mouth are all `Rectangle` + `radius` shapes. No image assets needed.
+- **Pure QML vector graphics** — body and blush use `Rectangle`, ears use `QtQuick.Shapes` `ShapePath` triangles with pink inner ear, mouth uses `Text` with Unicode kaomoji. No image assets needed.
+- **Facial rig inside body** — eyes, pupils, blush, and mouth are children of the body `Rectangle`, so they naturally inherit squash & stretch, wobble, and shake transforms.
 - **Transform-based animations** — uses `Translate`, `Rotation`, and `Scale` transforms rather than direct `x`/`y`/`rotation` properties, avoiding conflicts with anchor layouts.
 - **Squash & stretch** — scale origin is set to the bottom of the body (`origin.y: body.height`), so the pet appears grounded like a physical object.
 - **Volume preservation** — breathing animation stretches on one axis while compressing on the other.
@@ -163,21 +174,27 @@ dms restart
 
 ## 🧩 PetBlob Anatomy
 
-The pet is composed entirely of layered QML primitives:
+The pet is composed entirely of layered QML primitives. All facial features live inside the `body` Rectangle so they inherit physics transforms:
 
 ```
-         💤 (Zzz particle, sleeping only)
-    ⚡ (state emoji, when enabled)
-        ┌──────────┐
-   ┌────│ Highlight │────┐
-   │    └──────────┘    │
-   │  ┌──┐        ┌──┐  │  ← Eyes (squint when sleeping)
-   │  │◉││  Body  │◉││  │  ← Pupils (track mouse position)
-   │  └──┘  ┌──┐  └──┘  │
-   │   (◡)  │口│  (◡)   │  ← Blush + Mouth (color/scale by state)
-   │        └──┘         │
-   └─────────────────────┘
-        ░░░ shadow ░░░       ← Dynamic shadow (scales with bounce height)
+     ┌──┐  🎧 headband  ┌──┐     ← Shape triangle ears (with pink inner ear)
+     │◀│                │▶│     ← working headphones (accent-colored ear cups)
+     └──┘   ⚡ emoji     └──┘
+       ┌──────────────────┐
+       │  ▭▭ Highlight ▭▭ │
+       │  ┌──┐      ┌──┐  │
+       │  │◉││ Body │◉││  │     ← Eyes + Pupils (inside body, track mouse)
+       │  └──┘ ┌──┐ └──┘  │
+       │  (◡)  │◡│  (◡)   │     ← Blush + Kaomoji Mouth (inside body)
+       │        └──┘       │
+       └────────────────────┘
+            ░░░ shadow ░░░       ← Dynamic shadow (scales with bounce)
+```
+
+```
+ ⚡📝🔧  (working particles)     ← Code symbols float up during work
+ 💤      (sleeping Zzz)          ← Floats up while sleeping
+ ❤️      (click heart)           ← Pops out on click
 ```
 
 ## 📦 Dependencies

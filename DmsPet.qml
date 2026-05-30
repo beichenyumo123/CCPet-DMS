@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import qs.Common
@@ -16,6 +17,7 @@ PluginComponent {
     property color petColor: pluginData.petColor ?? Theme.primary
     property bool showStateLabel: pluginData.showStateIndicator ?? false
     property bool showNameLabel: pluginData.showPetName ?? false
+    property bool enableDecorations: pluginData.enableDecorations ?? true
 
     readonly property real maxPetSize: Math.min(Math.max(widgetThickness * 0.78, 18), 44)
     readonly property real speedMult: animSpeed / 100.0
@@ -28,7 +30,6 @@ PluginComponent {
     property int lastStateUpdate: 0
 
     function refreshState() {
-        // 触发 Process 获取最新状态，不再在这里重置状态，防止高频轮询导致的闪烁
         stateProcess.running = true
     }
 
@@ -40,7 +41,6 @@ PluginComponent {
 
     Process {
         id: stateProcess
-        // 修复：全面支持 XDG 兼容路径，防止读取失败
         command: ["sh", "-c", "cat \"${XDG_CACHE_HOME:-$HOME/.cache}/dms-pet/claude-state.json\" 2>/dev/null || echo '{}'"]
         running: false
         stdout: SplitParser {
@@ -55,7 +55,6 @@ PluginComponent {
                         var now = Math.floor(Date.now() / 1000)
                         var fileUpdate = d.updatedAt || 0
                         
-                        // 30秒过期惰性检测
                         if (fileUpdate === 0 || (now - fileUpdate) > 30) {
                             claudeState = "idle"
                             claudeEvent = ""
@@ -87,9 +86,6 @@ PluginComponent {
 
         width: height
         clip: false
-
-        readonly property real eyeH: height * 0.17
-        readonly property real pSize: height * 0.07
 
         // 眼神跟随鼠标偏置量
         property real pupilXOffset: 0
@@ -128,9 +124,106 @@ PluginComponent {
             transform: [
                 Translate { id: bodyMove; x: 0; y: 0 },
                 Rotation { id: bodyRotate; angle: 0; origin.x: body.width / 2; origin.y: body.height / 2 },
-                // 重点：缩放原点（Origin.y）设为 body.height（底盘），可以让它像站在地板上一样受力缩放
                 Scale { id: bodyScale; origin.x: body.width / 2; origin.y: body.height; xScale: 1.0; yScale: 1.0 }
             ]
+
+            // ═══════════════════════════════════════════
+            // 装饰配件（置于 body 内部，完美继承物理形变）
+            // ═══════════════════════════════════════════
+
+            // 左猫耳
+            Shape {
+                id: leftEar
+                width: body.width * 0.20; height: width * 1.1
+                rotation: -16
+                x: body.width * 0.10; y: -height * 0.45
+                visible: root.enableDecorations
+                antialiasing: true
+
+                ShapePath {
+                    fillColor: blob.state === "error" ? Qt.lighter(blob.pColor, 1.25) : blob.pColor
+                    strokeColor: Qt.darker(blob.pColor, 1.35)
+                    strokeWidth: 1.2
+                    startX: 0; startY: leftEar.height
+                    PathLine { x: leftEar.width * 0.5; y: 0 }
+                    PathLine { x: leftEar.width; y: leftEar.height }
+                    PathLine { x: 0; y: leftEar.height }
+                }
+                // 粉色内耳
+                ShapePath {
+                    fillColor: "#FFA4A4"
+                    strokeWidth: 0
+                    startX: leftEar.width * 0.18; startY: leftEar.height * 0.9
+                    PathLine { x: leftEar.width * 0.5; y: leftEar.height * 0.28 }
+                    PathLine { x: leftEar.width * 0.82; y: leftEar.height * 0.9 }
+                    PathLine { x: leftEar.width * 0.18; y: leftEar.height * 0.9 }
+                }
+            }
+
+            // 右猫耳
+            Shape {
+                id: rightEar
+                width: body.width * 0.20; height: width * 1.1
+                rotation: 16
+                x: body.width * 0.70; y: -height * 0.45
+                visible: root.enableDecorations
+                antialiasing: true
+
+                ShapePath {
+                    fillColor: blob.state === "error" ? Qt.lighter(blob.pColor, 1.25) : blob.pColor
+                    strokeColor: Qt.darker(blob.pColor, 1.35)
+                    strokeWidth: 1.2
+                    startX: 0; startY: rightEar.height
+                    PathLine { x: rightEar.width * 0.5; y: 0 }
+                    PathLine { x: rightEar.width; y: rightEar.height }
+                    PathLine { x: 0; y: rightEar.height }
+                }
+                // 粉色内耳
+                ShapePath {
+                    fillColor: "#FFA4A4"
+                    strokeWidth: 0
+                    startX: rightEar.width * 0.18; startY: rightEar.height * 0.9
+                    PathLine { x: rightEar.width * 0.5; y: rightEar.height * 0.28 }
+                    PathLine { x: rightEar.width * 0.82; y: rightEar.height * 0.9 }
+                    PathLine { x: rightEar.width * 0.18; y: rightEar.height * 0.9 }
+                }
+            }
+
+            // 精致电竞码农耳机（仅在 working 状态显现）
+            // 耳机梁
+            Rectangle {
+                width: body.width * 0.92; height: body.height * 0.12
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: body.height * 0.04
+                radius: height * 0.5
+                color: "#1E1E24"
+                border.color: "#3F3F46"; border.width: 1
+                visible: root.enableDecorations && blob.state === "working"
+                antialiasing: true
+                z: 1
+            }
+            // 左耳罩
+            Rectangle {
+                width: body.width * 0.13; height: body.height * 0.35
+                x: -width * 0.45; y: body.height * 0.22
+                radius: width * 0.4
+                color: "#1E1E24"
+                border.color: Theme.accent; border.width: 1.5
+                visible: root.enableDecorations && blob.state === "working"
+                antialiasing: true
+                z: 2
+            }
+            // 右耳罩
+            Rectangle {
+                width: body.width * 0.13; height: body.height * 0.35
+                x: body.width - width * 0.55; y: body.height * 0.22
+                radius: width * 0.4
+                color: "#1E1E24"
+                border.color: Theme.accent; border.width: 1.5
+                visible: root.enableDecorations && blob.state === "working"
+                antialiasing: true
+                z: 2
+            }
 
             // 身体高光
             Rectangle {
@@ -142,96 +235,112 @@ PluginComponent {
                 antialiasing: true
             }
 
-            // 状态 Emoji 气泡标签（跟随 body transform 移动）
+            // ═══════════════════════════════════════════
+            // 五官组件（全部移入 body，享受完美的果冻挤压动画）
+            // ═══════════════════════════════════════════
+
+            // 左眼
+            Rectangle {
+                id: leftEye
+                width: body.width * 0.19
+                height: blob.state === "sleeping" ? body.height * 0.04 : body.height * 0.19
+                x: body.width * 0.24; y: body.height * 0.28
+                radius: height * 0.5; color: "#FFFFFF"; antialiasing: true
+                Behavior on height { NumberAnimation { duration: 220 / blob.speedMul; easing.type: Easing.InOutQuad } }
+            }
+            // 右眼
+            Rectangle {
+                id: rightEye
+                width: body.width * 0.19
+                height: blob.state === "sleeping" ? body.height * 0.04 : body.height * 0.19
+                x: body.width * 0.54; y: body.height * 0.28
+                radius: height * 0.5; color: "#FFFFFF"; antialiasing: true
+                Behavior on height { NumberAnimation { duration: 220 / blob.speedMul; easing.type: Easing.InOutQuad } }
+            }
+
+            // 左瞳孔（支持跟随鼠标偏移）
+            Rectangle {
+                id: leftPupil
+                width: body.width * 0.08; height: width; radius: height * 0.5
+                x: leftEye.x + leftEye.width * 0.5 - width * 0.5 + blob.pupilXOffset
+                y: leftEye.y + leftEye.height * 0.5 - height * 0.5 + blob.pupilYOffset
+                color: blob.state === "error" ? "#FF1744" : "#121212"
+                visible: leftEye.height > body.height * 0.05
+                antialiasing: true
+                Behavior on color { ColorAnimation { duration: 200 } }
+            }
+            // 右瞳孔
+            Rectangle {
+                id: rightPupil
+                width: body.width * 0.08; height: width; radius: height * 0.5
+                x: rightEye.x + rightEye.width * 0.5 - width * 0.5 + blob.pupilXOffset
+                y: rightEye.y + rightEye.height * 0.5 - height * 0.5 + blob.pupilYOffset
+                color: blob.state === "error" ? "#FF1744" : "#121212"
+                visible: rightEye.height > body.height * 0.05
+                antialiasing: true
+                Behavior on color { ColorAnimation { duration: 200 } }
+            }
+
+            // 腮红
+            Rectangle {
+                width: body.width * 0.13; height: body.height * 0.07
+                x: body.width * 0.11; y: body.height * 0.47
+                radius: height * 0.5; color: Qt.rgba(1, 0.38, 0.38, 0.22)
+                visible: blob.state !== "sleeping" && blob.state !== "error"
+                antialiasing: true
+            }
+            Rectangle {
+                width: body.width * 0.13; height: body.height * 0.07
+                x: body.width * 0.74; y: body.height * 0.47
+                radius: height * 0.5; color: Qt.rgba(1, 0.38, 0.38, 0.22)
+                visible: blob.state !== "sleeping" && blob.state !== "error"
+                antialiasing: true
+            }
+
+            // 嘴部组件：使用无套娃、高雅扁平化的 Unicode 颜文字符号嘴
+            Text {
+                id: mouthText
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: body.height * 0.51
+                color: blob.state === "error" ? "#FF1744" : "#121212"
+                font.pixelSize: body.height * 0.18
+                font.bold: true
+                opacity: blob.state === "sleeping" ? 0 : 0.85
+
+                text: {
+                    switch (blob.state) {
+                        case "idle": return "◡";      // 治愈系微笑
+                        case "working": return "▰";   // 专注工作
+                        case "waking": return "⌓";    // 迷糊眨眼/哈欠
+                        case "error": return "⁔";     // 委屈
+                        case "alert": return "ロ";    // 惊讶
+                        default: return "◡";
+                    }
+                }
+
+                Behavior on font.pixelSize { NumberAnimation { duration: 150 / blob.speedMul; easing.type: Easing.OutBack } }
+                Behavior on opacity { NumberAnimation { duration: 250 } }
+            }
+
+            // 状态 Emoji 气泡标签（悬浮在宠物头顶）
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                y: -height * 0.7
+                y: -height * 0.75
                 text: {
                     switch (blob.state) {
                         case "working": return "⚡";
                         case "waking": return "☀️";
-                        case "sleeping": return ""; // 睡觉状态已替换为浮动 💤 粒子
+                        case "sleeping": return "";
                         case "error": return "❌";
                         case "alert": return "🚨";
                         default: return "";
                     }
                 }
-                font.pixelSize: Math.max(12, blob.height * 0.26)
+                font.pixelSize: Math.max(12, body.height * 0.26)
                 visible: blob.showLabel && blob.state !== "idle"
                 opacity: visible ? 1.0 : 0.0
                 Behavior on opacity { NumberAnimation { duration: 200 / blob.speedMul; easing.type: Easing.InOutQuad } }
             }
-        }
-
-        // 眼睛组件
-        Rectangle {
-            id: leftEye
-            width: blob.height * 0.19; height: blob.state === "sleeping" ? blob.height * 0.04 : blob.eyeH
-            x: blob.width * 0.28; y: blob.height * 0.30
-            radius: height * 0.5; color: "#FFFFFF"; antialiasing: true
-            Behavior on height { NumberAnimation { duration: 220 / blob.speedMul; easing.type: Easing.InOutQuad } }
-        }
-        Rectangle {
-            id: rightEye
-            width: blob.height * 0.19; height: blob.state === "sleeping" ? blob.height * 0.04 : blob.eyeH
-            x: blob.width * 0.53; y: blob.height * 0.30
-            radius: height * 0.5; color: "#FFFFFF"; antialiasing: true
-            Behavior on height { NumberAnimation { duration: 220 / blob.speedMul; easing.type: Easing.InOutQuad } }
-        }
-
-        // 瞳孔组件（支持跟随鼠标偏移）
-        Rectangle {
-            id: leftPupil
-            width: blob.pSize; height: blob.pSize; radius: height * 0.5
-            x: leftEye.x + leftEye.width * 0.5 - width * 0.5 + blob.pupilXOffset
-            y: leftEye.y + leftEye.height * 0.5 - height * 0.5 + blob.pupilYOffset
-            color: blob.state === "error" ? "#FF1744" : "#121212"
-            visible: leftEye.height > blob.height * 0.05
-            antialiasing: true
-            Behavior on color { ColorAnimation { duration: 200 } }
-        }
-        Rectangle {
-            id: rightPupil
-            width: blob.pSize; height: blob.pSize; radius: height * 0.5
-            x: rightEye.x + rightEye.width * 0.5 - width * 0.5 + blob.pupilXOffset
-            y: rightEye.y + rightEye.height * 0.5 - height * 0.5 + blob.pupilYOffset
-            color: blob.state === "error" ? "#FF1744" : "#121212"
-            visible: rightEye.height > blob.height * 0.05
-            antialiasing: true
-            Behavior on color { ColorAnimation { duration: 200 } }
-        }
-
-        // 少女红晕腮红
-        Rectangle {
-            width: blob.height * 0.13; height: blob.height * 0.07
-            x: blob.width * 0.15; y: blob.height * 0.50
-            radius: height * 0.5; color: Qt.rgba(1, 0.38, 0.38, 0.18)
-            visible: blob.state !== "sleeping" && blob.state !== "error"
-            antialiasing: true
-        }
-        Rectangle {
-            width: blob.height * 0.13; height: blob.height * 0.07
-            x: blob.width * 0.72; y: blob.height * 0.50
-            radius: height * 0.5; color: Qt.rgba(1, 0.38, 0.38, 0.18)
-            visible: blob.state !== "sleeping" && blob.state !== "error"
-            antialiasing: true
-        }
-
-        // 嘴部组件：随状态夸张变形
-        Rectangle {
-            id: mouth
-            anchors.horizontalCenter: body.horizontalCenter
-            y: body.height * 0.58
-            width: blob.state === "alert" ? blob.height * 0.17 : (blob.state === "working" ? blob.height * 0.08 : blob.height * 0.06)
-            height: blob.state === "alert" ? blob.height * 0.15 : (blob.state === "working" ? blob.height * 0.07 : blob.height * 0.05)
-            radius: height * 0.5
-            color: blob.state === "alert" ? "#D32F2F" : (blob.state === "error" ? "#FF1744" : "#121212")
-            opacity: blob.state === "sleeping" ? 0 : 0.75
-            antialiasing: true
-            Behavior on width { NumberAnimation { duration: 150 / blob.speedMul; easing.type: Easing.OutBack } }
-            Behavior on height { NumberAnimation { duration: 150 / blob.speedMul; easing.type: Easing.OutBack } }
-            Behavior on opacity { NumberAnimation { duration: 250 } }
-            Behavior on color { ColorAnimation { duration: 150 } }
         }
 
 
@@ -293,11 +402,43 @@ PluginComponent {
             }
         }
 
+        // 3. 工作状态下身体周围徐徐升起的编程微粒子
+        Text {
+            id: codeParticle
+            text: ""
+            font.pixelSize: blob.height * 0.18
+            color: Qt.lighter(blob.pColor, 1.4)
+            opacity: 0
+            visible: blob.state === "working"
+
+            SequentialAnimation {
+                id: codeParticleAnim
+                running: blob.state === "working"
+                loops: Animation.Infinite
+
+                PropertyAction { target: codeParticle; property: "opacity"; value: 0.0 }
+                ScriptAction { script: {
+                    var symbols = ["⚡","📝","🔧","<>","{}","0","1","⚙️"]
+                    codeParticle.text = symbols[Math.floor(Math.random() * symbols.length)]
+                    codeParticle.x = blob.width * (Math.random() > 0.5 ? 0.05 : 0.80)
+                    codeParticle.y = blob.height * 0.60
+                }}
+
+                ParallelAnimation {
+                    NumberAnimation { target: codeParticle; property: "opacity"; to: 0.75; duration: 400 / blob.speedMul }
+                    NumberAnimation { target: codeParticle; property: "y"; to: blob.height * 0.08; duration: 1000 / blob.speedMul; easing.type: Easing.OutQuad }
+                    NumberAnimation { target: codeParticle; property: "x"; to: codeParticle.x + (Math.random() * 16 - 8); duration: 1000 / blob.speedMul }
+                }
+                NumberAnimation { target: codeParticle; property: "opacity"; to: 0.0; duration: 200 / blob.speedMul }
+                PauseAnimation { duration: 600 }
+            }
+        }
+
         // ═══════════════════════════════════════════
         // 挤压与拉伸物理动画引擎
         // ═══════════════════════════════════════════
 
-        // 生物呼吸呼吸动效 (完美遵循体积守恒：x 轴展宽时 y 轴收缩)
+        // 生物呼吸呼吸动效
         SequentialAnimation {
             id: breatheAnim
             running: true; loops: Animation.Infinite
@@ -314,14 +455,14 @@ PluginComponent {
         // 眨眼动画
         SequentialAnimation {
             id: blinkAnim; running: false
-            PropertyAction { target: leftEye; property: "height"; value: blob.height * 0.03 }
-            PropertyAction { target: rightEye; property: "height"; value: blob.height * 0.03 }
+            PropertyAction { target: leftEye; property: "height"; value: body.height * 0.03 }
+            PropertyAction { target: rightEye; property: "height"; value: body.height * 0.03 }
             PauseAnimation { duration: 65 / blob.speedMul }
-            PropertyAction { target: leftEye; property: "height"; value: blob.eyeH }
-            PropertyAction { target: rightEye; property: "height"; value: blob.eyeH }
+            PropertyAction { target: leftEye; property: "height"; value: body.height * 0.19 }
+            PropertyAction { target: rightEye; property: "height"; value: body.height * 0.19 }
         }
 
-        // 点击产生的超Q弹果冻回弹动画
+        // 点击果冻回弹
         SequentialAnimation {
             id: squishAnim; running: false
             ParallelAnimation {
@@ -338,48 +479,43 @@ PluginComponent {
             }
         }
 
-        // 欢快小跳跳动画：包含起跳前的蓄力弯腿和落地时的撞击缓冲
+        // 趣味闲置跳跃
         SequentialAnimation {
             id: hopAnim; running: false
-            // 1. 起跳弯腿蓄力
             ParallelAnimation {
                 NumberAnimation { target: bodyScale; property: "yScale"; to: 0.85; duration: 90 / blob.speedMul; easing.type: Easing.OutQuad }
                 NumberAnimation { target: bodyScale; property: "xScale"; to: 1.15; duration: 90 / blob.speedMul; easing.type: Easing.OutQuad }
             }
-            // 2. 弹跳起飞
             ParallelAnimation {
                 NumberAnimation { target: bodyMove; property: "y"; from: 0; to: -6; duration: 140 / blob.speedMul; easing.type: Easing.OutQuad }
                 NumberAnimation { target: bodyScale; property: "yScale"; to: 1.15; duration: 140 / blob.speedMul; easing.type: Easing.OutQuad }
                 NumberAnimation { target: bodyScale; property: "xScale"; to: 0.88; duration: 140 / blob.speedMul; easing.type: Easing.OutQuad }
             }
-            // 3. 地心引力下落
             ParallelAnimation {
                 NumberAnimation { target: bodyMove; property: "y"; to: 0; duration: 140 / blob.speedMul; easing.type: Easing.InQuad }
                 NumberAnimation { target: bodyScale; property: "yScale"; to: 1.0; duration: 140 / blob.speedMul; easing.type: Easing.InQuad }
-                NumberAnimation { target: bodyScale; property: "xScale"; to: 1.0; duration: 140 / blob.speedMul; easing.type: Easing.InQuad }
+                NumberAnimation { target: bodyScale; property: "xScale"; to: 1.0; duration: 140 / blob.speedMul; easing.type: InQuad }
             }
-            // 4. 落地冲击缓冲
             ParallelAnimation {
                 NumberAnimation { target: bodyScale; property: "yScale"; to: 0.88; duration: 70 / blob.speedMul; easing.type: Easing.OutQuad }
                 NumberAnimation { target: bodyScale; property: "xScale"; to: 1.12; duration: 70 / blob.speedMul; easing.type: Easing.OutQuad }
             }
-            // 5. 还原
             ParallelAnimation {
                 NumberAnimation { target: bodyScale; property: "yScale"; to: 1.0; duration: 110 / blob.speedMul; easing.type: Easing.OutElastic }
                 NumberAnimation { target: bodyScale; property: "xScale"; to: 1.0; duration: 110 / blob.speedMul; easing.type: Easing.OutElastic }
             }
         }
 
-        // 工作状态下的持续左右果冻晃晃脑动画
+        // 工作态晃晃脑
         SequentialAnimation {
             id: wobbleAnim; running: false; loops: Animation.Infinite
-            NumberAnimation { target: bodyRotate; property: "angle"; from: 0; to: 15; duration: 250 / blob.speedMul; easing.type: Easing.InOutQuad }
-            NumberAnimation { target: bodyRotate; property: "angle"; from: 15; to: -15; duration: 450 / blob.speedMul; easing.type: Easing.InOutQuad }
-            NumberAnimation { target: bodyRotate; property: "angle"; from: -15; to: 0; duration: 250 / blob.speedMul; easing.type: Easing.InOutQuad }
+            NumberAnimation { target: bodyRotate; property: "angle"; from: 0; to: 12; duration: 250 / blob.speedMul; easing.type: Easing.InOutQuad }
+            NumberAnimation { target: bodyRotate; property: "angle"; from: 12; to: -12; duration: 450 / blob.speedMul; easing.type: Easing.InOutQuad }
+            NumberAnimation { target: bodyRotate; property: "angle"; from: -12; to: 0; duration: 250 / blob.speedMul; easing.type: Easing.InOutQuad }
             PauseAnimation { duration: 400 / blob.speedMul }
         }
 
-        // 错误状态下的疯狂颤抖
+        // 报错疯狂颤抖
         SequentialAnimation {
             id: shakeAnim; running: false
             NumberAnimation { target: bodyMove; property: "x"; to: 6; duration: 40 / blob.speedMul }
@@ -389,21 +525,18 @@ PluginComponent {
             NumberAnimation { target: bodyMove; property: "x"; to: 0; duration: 40 / blob.speedMul }
         }
 
-        // 警告/确认提示状态下的危机跳跃（已升级为无限循环，并在每一次弹跳周期尾部加入优雅停顿）
+        // 警告提示危机跳跃
         SequentialAnimation {
             id: alertJumpAnim; running: false; loops: Animation.Infinite
-            // 第一次大跳
             NumberAnimation { target: bodyMove; property: "y"; from: 0; to: -10; duration: 110 / blob.speedMul; easing.type: Easing.OutQuad }
             NumberAnimation { target: bodyMove; property: "y"; to: 0; duration: 140 / blob.speedMul; easing.type: Easing.OutBounce }
             PauseAnimation { duration: 400 / blob.speedMul }
-            // 第二次小跳缓冲
             NumberAnimation { target: bodyMove; property: "y"; from: 0; to: -5; duration: 80 / blob.speedMul; easing.type: Easing.OutQuad }
             NumberAnimation { target: bodyMove; property: "y"; to: 0; duration: 100 / blob.speedMul; easing.type: Easing.OutBounce }
-            // 每次跳完停顿一段时间（1.2秒），防止高频鬼畜导致处理器负载增加，同时维持警觉感
             PauseAnimation { duration: 1200 / blob.speedMul }
         }
 
-        // 伸懒腰起床动效
+        // 起床动效
         SequentialAnimation {
             id: wakeAnim; running: false
             PropertyAction { target: body; property: "scale"; value: 0.82 }
@@ -414,7 +547,7 @@ PluginComponent {
             ScriptAction { script: blinkAnim.restart() }
         }
 
-        // 随机眨眼睛触发器
+        // 随机眨眼睛
         Timer {
             id: blinkTimer
             interval: (2400 + Math.floor(Math.random() * 2600)) / blob.speedMul
@@ -425,7 +558,7 @@ PluginComponent {
             }
         }
 
-        // 闲置状态下偶尔跳动一下的趣味随机事件触发器
+        // 随机跳跃
         Timer {
             id: idleTimer
             interval: (4000 + Math.floor(Math.random() * 5500)) / blob.speedMul
@@ -439,7 +572,6 @@ PluginComponent {
             }
         }
 
-        // 监视状态改变，自动切换动效、复位之前的变换
         onStateChanged: {
             wobbleAnim.running = false; shakeAnim.running = false; alertJumpAnim.running = false
             bodyMove.x = 0; bodyMove.y = 0; bodyRotate.angle = 0
@@ -451,7 +583,6 @@ PluginComponent {
             else if (state === "alert") alertJumpAnim.running = true
         }
 
-        // 精确检测范围的 Hover 与 Click 交互器
         MouseArea {
             anchors.fill: parent
             hoverEnabled: true
@@ -459,7 +590,6 @@ PluginComponent {
             
             onPositionChanged: {
                 if (blob.state !== "sleeping") {
-                    // 将鼠标光标偏移坐标化，映射至瞳孔偏移量，形成灵动的注视效果
                     var relX = (mouseX - width / 2) / (width / 2)
                     var relY = (mouseY - height / 2) / (height / 2)
                     blob.pupilXOffset = relX * (leftEye.width * 0.28)
@@ -560,7 +690,7 @@ PluginComponent {
                         PetBlob {
                             anchors.centerIn: parent; height: 96
                             state: root.claudeState; pColor: root.activeColor
-                            speedMul: root.speedMult; showLabel: true  // popout 是详情视图，始终显示 emoji
+                            speedMul: root.speedMult; showLabel: true
                         }
                     }
 

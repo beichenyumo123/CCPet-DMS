@@ -62,4 +62,11 @@ PluginSettings {
         description: "Display the pet's name next to it in the bar"
         defaultValue: false
     }
+
+    ToggleSetting {
+        settingKey: "enableDecorations"
+        label: "Enable Pet Accessories"
+        description: "Add cute cat ears and working headphones"
+        defaultValue: true
+    }
 }
